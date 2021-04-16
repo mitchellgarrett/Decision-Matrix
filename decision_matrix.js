@@ -1,28 +1,41 @@
-const ID_NUM_IMPACT_FACTORS = "NUM_IMPACT_FACTORS";
 const ID_NUM_FEASIBILITY_FACTORS = "NUM_FEASIBILITY_FACTORS";
+const ID_NUM_IMPACT_FACTORS = "NUM_IMPACT_FACTORS";
 const ID_NUM_OPTIONS = "NUM_OPTIONS";
-const ID_IMPACT_MATRIX = "IMPACT_MATRIX";
 const ID_FEASIBILITY_MATRIX = "FEASIBILITY_MATRIX";
+const ID_IMPACT_MATRIX = "IMPACT_MATRIX";
 const ID_GRAPH = "GRAPH";
+const ID_DATA = "MATRIX_DATA";
 
 const COLORS = [ "red", "yellow", "green" ];
+const LABELS = [ "None", "Below Average", "Average", "Above Average", "Most" ];
+const MIN_VALUE = 0;
+const MAX_VALUE = 4;
+
+var DATA = {
+	"num_feasibility_factors" : "3",
+	"num_impact_factors" : "3",
+	"num_options" : "3",
+	"feasibility_factors" : [],
+	"impact_factors" : [],
+	"options" : [],
+	"weights" : [],
+	"feasibility_values" : [],
+	"impact_values" : []
+};
+
+function saveData(data) {
+	window.localStorage.setItem(ID_DATA, JSON.stringify(data));
+}
+
+function loadData() {
+	var data = window.localStorage.getItem(ID_DATA);
+	if (data != null) {
+		DATA = JSON.parse(data);
+	}
+}
 
 function initializeMatrix() {
-	var factors = window.localStorage.getItem(ID_NUM_IMPACT_FACTORS);
-	if (factors != null) {
-		document.getElementById(ID_NUM_IMPACT_FACTORS).value = factors;
-	}
-	
-	var factors = window.localStorage.getItem(ID_NUM_FEASIBILITY_FACTORS);
-	if (factors != null) {
-		document.getElementById(ID_NUM_FEASIBILITY_FACTORS).value = factors;
-	}
-	
-	var options = window.localStorage.getItem(ID_NUM_OPTIONS);
-	if (options != null) {
-		document.getElementById(ID_NUM_OPTIONS).value = options;
-	}
-	
+	loadData();
 	generateMatrix();
 }
 
@@ -33,7 +46,7 @@ function calculateSubMatrix(factorType, id) {
 	var total = 0;
 	for (var f = 0; f < factors; f++) {
 		var weight = parseInt(document.getElementById(`WEIGHT_${id}_${f}`).value);
-		total += weight * 4;
+		total += weight * (MAX_VALUE - MIN_VALUE);
 	}
 	
 	var values = [];
@@ -42,7 +55,7 @@ function calculateSubMatrix(factorType, id) {
 		for (var f = 0; f < factors; f++) {
 			var weight = parseInt(document.getElementById(`WEIGHT_${id}_${f}`).value);
 			var value = parseInt(document.getElementById(`VALUE_${id}_${f}_${o}`).value);
-			sum += weight * (value - 1);
+			sum += weight * (value - MIN_VALUE);
 		}
 		
 		values.push(sum / total);
@@ -84,10 +97,10 @@ function drawGraph(xs, ys) {
 	ctx.textAlign = "center";
 	ctx.save();
 	ctx.textBaseline = "hanging";
-	ctx.fillText("Impact Factors", MIN_X + WIDTH / 2, MAX_Y);
+	ctx.fillText("Feasibility Factors", MIN_X + WIDTH / 2, MAX_Y);
 	ctx.translate(0, MIN_Y + HEIGHT / 2);
 	ctx.rotate(-Math.PI / 2);
-	ctx.fillText("Feasibility Factors", 0, 0);
+	ctx.fillText("Impact Factors", 0, 0);
 	ctx.restore();
 	
 	// Draw points
@@ -113,8 +126,8 @@ function drawGraph(xs, ys) {
 }
 
 function calculateMatrix() {
-	xs = calculateSubMatrix(ID_NUM_IMPACT_FACTORS, "I");
-	ys = calculateSubMatrix(ID_NUM_FEASIBILITY_FACTORS, "F");
+	xs = calculateSubMatrix(ID_NUM_FEASIBILITY_FACTORS, "F");
+	ys = calculateSubMatrix(ID_NUM_IMPACT_FACTORS, "I");
 	drawGraph(xs, ys);
 }
 
@@ -130,7 +143,7 @@ function generateSubMatrix(matrixType, factorType, title, id) {
 	
 	var tr;
 	var th;
-
+	
 	// Create header
 	tr = document.createElement("tr");
 	matrix.appendChild(tr);
@@ -140,7 +153,7 @@ function generateSubMatrix(matrixType, factorType, title, id) {
 	tr.appendChild(th);
 	
 	th = document.createElement("th");
-	th.innerHTML = "<b>Weights</b>";
+	th.innerHTML = "<b>Importance</b>";
 	tr.appendChild(th);
 	
 	// Columns
@@ -149,6 +162,14 @@ function generateSubMatrix(matrixType, factorType, title, id) {
 		th.innerHTML = `<input type="text" value="Option ${(o + 1)}">`;
 		tr.appendChild(th);
 	}
+	
+	/*tr = document.createElement("tr");
+	matrix.appendChild(tr);
+	
+	th = document.createElement("th");
+	th.setAttribute("colspan", 2 + options); 
+	th.innerHTML = `<b>${title}</b>`;
+	tr.appendChild(th);*/
 	
 	// Rows
 	for (var f = 0; f < factors; f++) {
@@ -175,8 +196,9 @@ function generateSubMatrix(matrixType, factorType, title, id) {
 }
 
 function generateMatrix() {
-	generateSubMatrix(ID_IMPACT_MATRIX, ID_NUM_IMPACT_FACTORS, "Impact Factors", "I");
+	saveData(DATA);
 	generateSubMatrix(ID_FEASIBILITY_MATRIX, ID_NUM_FEASIBILITY_FACTORS, "Feasibility Factors", "F");
+	generateSubMatrix(ID_IMPACT_MATRIX, ID_NUM_IMPACT_FACTORS, "Impact Factors", "I");
 	calculateMatrix();
 }
 
@@ -202,6 +224,6 @@ function generateRow(f, options, id) {
 
 function generateSlider(id) {
 	th = document.createElement("th");
-	th.innerHTML = `<output>3</output> <br> 1 <input id="${id}" type="range" max="5" min="1" oninput="this.previousElementSibling.previousElementSibling.value = this.value; calculateMatrix();"> 5`;
+	th.innerHTML = `<output>${LABELS[MAX_VALUE / 2 - MIN_VALUE]}</output> <br> ${LABELS[MIN_VALUE]} <input id="${id}" type="range" max="${MAX_VALUE}" min="${MIN_VALUE}" oninput="this.previousElementSibling.previousElementSibling.value = LABELS[this.value]; calculateMatrix();"> ${LABELS[MAX_VALUE]}`;
 	return th;
 }
