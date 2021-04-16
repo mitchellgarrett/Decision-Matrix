@@ -1,0 +1,18 @@
+body {
+	font-family: 'Courier New', Courier, monospace;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+tr, th{
+	border: 1px solid black;
+	font-weight: normal;
+}
+
+input {
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 1em;
+	font-weight: bold;
+}
