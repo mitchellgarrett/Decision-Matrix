@@ -12,14 +12,18 @@
 </head>
 <body onload="initializeMatrix();">
 	<table>
-		<tr><th><b># Feasibility Factors</b><input id="NUM_FEASIBILITY_FACTORS" type="number" min="1" max="100" value="3" oninput="generateMatrix();"></th></tr>
-		<tr><th><b># Impact Factors</b><input id="NUM_IMPACT_FACTORS" type="number" min="1" max="100" value="3" oninput="generateMatrix();"></th></tr>
-		<tr><th><b># Options</b><input id="NUM_OPTIONS" type="number" min="1" max="100" value="3" oninput="generateMatrix();"></th></tr>
+		<tr><th><b># Feasibility Factors</b><input id="NUM_FEASIBILITY_FACTORS" type="number" min="1" max="100" value="1" oninput="onDataChanged(); generateMatrix();"></th></tr>
+		<tr><th><b># Impact Factors</b><input id="NUM_IMPACT_FACTORS" type="number" min="1" max="100" value="1" oninput="onDataChanged(); generateMatrix();"></th></tr>
+		<tr><th><b># Options</b><input id="NUM_OPTIONS" type="number" min="1" max="100" value="1" oninput="onDataChanged(); generateMatrix();"></th></tr>
+		<tr><th><button onclick="saveData();">Save</button></th></tr>
+		<tr><th><button onclick="loadData();">Load</button></th></tr>
+		<tr><th><button onclick="clearData();">Clear</button></th></tr>
 	</table>
 	
 	<br>
 	
 	<table style="width: 100%;">
+		<tr><th><input id="MATRIX_TITLE" type="text" value="Decision Matrix"></th></tr>
 		<tr><th><table id="FEASIBILITY_MATRIX" style="width: 100%;"></table></th></tr>
 		<tr><th><table id="IMPACT_MATRIX" style="width: 100%;"></table></th></tr>
 		<tr><th><canvas id="GRAPH"></canvas></th></tr>
