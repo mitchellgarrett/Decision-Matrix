@@ -4,11 +4,8 @@ const ID_NUM_IMPACT_FACTORS = "NUM_IMPACT_FACTORS";
 const ID_NUM_OPTIONS = "NUM_OPTIONS";
 const ID_FEASIBILITY_MATRIX = "FEASIBILITY_MATRIX";
 const ID_IMPACT_MATRIX = "IMPACT_MATRIX";
-const ID_GRAPH = "GRAPH";
-const ID_DATA = "MATRIX_DATA";
+const ID_FILE_SELECTOR = "FILE_SELECTOR";
 
-const COLORS = [ "red", "yellow", "green" ];
-const LABELS = [ "None", "Below Average", "Average", "Above Average", "Most" ];
 const MIN_VALUE = 0;
 const MAX_VALUE = 4;
 
@@ -25,11 +22,6 @@ var DATA = {
 	"feasibility_values" : [ `${MAX_VALUE / 2 - MIN_VALUE}` ],
 	"impact_values" : [ `${MAX_VALUE / 2 - MIN_VALUE}` ]
 };
-
-function clearData() {
-	window.localStorage.removeItem(ID_DATA);
-	location.reload();
-}
 
 function onDataChanged() {
 	// Set title and length variables
@@ -122,22 +114,106 @@ function onDataChanged() {
 	}
 }
 
-function saveData() {
-	onDataChanged();
-	window.localStorage.setItem(ID_DATA, JSON.stringify(DATA));
+function deleteData(filename) {
+	window.localStorage.removeItem(filename);
+	location.reload();
 }
 
-function loadData() {
-	var data = window.localStorage.getItem(ID_DATA);
+function saveData() {
+	onDataChanged();
+	window.localStorage.setItem(`${DATA.title}.json`, JSON.stringify(DATA));
+	updateFiles();
+}
+
+function updateFiles() {
+	var datas = [];
+	for (var i = 0; i < window.localStorage.length; i++) {
+		var key = window.localStorage.key(i);
+		if (key.substr(key.length - 5, 5) == ".json") {
+			datas.push(JSON.parse(window.localStorage[key]));
+		}
+	}
+	
+	const selector = document.getElementById(ID_FILE_SELECTOR);
+	selector.innerHTML = "";
+	
+	if (datas.length <= 0) {
+		var option = document.createElement("option");
+		option.innerHTML = "no saved files";
+		option.setAttribute("default", null);
+		selector.appendChild(option);
+	}
+	
+	for (var i = datas.length - 1; i >= 0; i--) {
+		var option = document.createElement("option");
+		option.value = datas[i].title + ".json";
+		option.innerHTML = datas[i].title;
+		
+		if (datas[i].title == DATA.title) {
+			option.setAttribute("selected", null);
+		}
+		
+		selector.appendChild(option);
+	}
+}
+
+function loadData(filename) {
+	var data = window.localStorage.getItem(filename);
 	if (data != null) {
 		DATA = JSON.parse(data);
 	}
-	
+	updateFiles();
 	generateMatrix();
+}
+
+function downloadData() {
+	const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: "text/plain;charset=utf-8" });
+	const filename = `${DATA.title}.json`;
+	
+	const isIE = false || !!document.documentMode;
+	if (isIE) {
+		window.navigator.msSaveBlob(blob, filename);
+	} else {
+		var url = window.URL || window.webkitURL;
+		var link = url.createObjectURL(blob);
+		var a = document.createElement("a");
+		a.download = filename;
+		a.href = link;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	}
+}
+
+function uploadData() {
+	const fr = new FileReader();
+	
+	fr.onload = function (e) {
+		try {
+			DATA = JSON.parse(e.target.result);
+			generateMatrix();
+		} catch (e) {
+			location.reload();
+		}
+	}
+	
+	var input = document.createElement("input");
+	input.type = "file";
+	input.accept = ".json";
+	input.oninput = () => { fr.readAsText(new Blob([input.files.item(0)], { type: "text/plain;charset=utf-8" })); }
+	input.click();
+	
+	
 }
 
 function initializeMatrix() {
 	loadData();
+}
+
+function calculateMatrix() {
+	xs = calculateSubMatrix(DATA.num_feasibility_factors, "F");
+	ys = calculateSubMatrix(DATA.num_impact_factors, "I");
+	drawGraph(xs, ys);
 }
 
 function calculateSubMatrix(factors, id) {
@@ -169,186 +245,16 @@ function calculateSubMatrix(factors, id) {
 	return values;
 }
 
-function drawGraph(xs, ys) {
-	const canvas = document.getElementById(ID_GRAPH);
-	const ctx = canvas.getContext("2d");
-	
-	canvas.width = window.innerWidth * 0.5;
-	canvas.height = canvas.width * 0.5;
-	
-	const BORDER = 12.5;
-	const MIN_X = BORDER;
-	const MAX_X = canvas.width - BORDER;
-	const MIN_Y = BORDER;
-	const MAX_Y = canvas.height - BORDER;
-	const WIDTH = MAX_X - MIN_X;
-	const HEIGHT = MAX_Y - MIN_Y;
-	
-	ctx.clearRect(0, 0, canvas.width,  canvas.height);
-	
-	// Draw border
-	ctx.lineWidth = 1;
-	ctx.beginPath();
-	ctx.moveTo(MIN_X, MIN_Y + HEIGHT / 2);
-	ctx.lineTo(MAX_X, MIN_Y + HEIGHT / 2);
-	ctx.moveTo(MIN_X + WIDTH / 2, MIN_Y);
-	ctx.lineTo(MIN_X + WIDTH / 2, MAX_Y);
-	ctx.rect(MIN_X, MIN_Y, WIDTH, HEIGHT);
-	ctx.stroke();
-	
-	// Draw text
-	ctx.font = `bold ${BORDER}px Courier New`;
-	ctx.textAlign = "center";
-	ctx.save();
-	ctx.textBaseline = "hanging";
-	ctx.fillText("Feasibility Factors", MIN_X + WIDTH / 2, MAX_Y);
-	ctx.translate(0, MIN_Y + HEIGHT / 2);
-	ctx.rotate(-Math.PI / 2);
-	ctx.fillText("Impact Factors", 0, 0);
-	ctx.restore();
-	
-	// Draw points
-	for (var i = 0; i < xs.length; i++) {
-		if (xs[i] >= 0.5 && ys[i] >= 0.5) {
-			if (xs[i] > 0.5 || ys[i] > 0.5) {
-				ctx.fillStyle = COLORS[2];
-			} else {
-				ctx.fillStyle = COLORS[1];
-			}
-		} else {
-			ctx.fillStyle = COLORS[0];
-		}
-		
-		ctx.beginPath();
-		ctx.arc(MIN_X + xs[i] * WIDTH, MAX_Y - ys[i] * HEIGHT, 15, 0, 2 * Math.PI);
-		ctx.fill();
-		ctx.stroke();
-		ctx.fillStyle = "black";
-		ctx.textBaseline = "middle";
-		ctx.fillText((i + 1), MIN_X + xs[i] * WIDTH, MAX_Y - ys[i] * HEIGHT);
-	}
-}
-
-function calculateMatrix() {
-	xs = calculateSubMatrix(DATA.num_feasibility_factors, "F");
-	ys = calculateSubMatrix(DATA.num_impact_factors, "I");
-	drawGraph(xs, ys);
-}
-
-function generateSubMatrix(matrixType, factors, title, id) {
-	var options = DATA.num_options;
-	
-	var matrix = document.getElementById(matrixType);
-	matrix.innerHTML = "";
-	
-	var tr;
-	var th;
-	
-	// Create header
-	tr = document.createElement("tr");
-	matrix.appendChild(tr);
-	
-	th = document.createElement("th");
-	th.innerHTML = `<b>${title}</b>`;
-	tr.appendChild(th);
-	
-	th = document.createElement("th");
-	th.innerHTML = "<b>Importance</b>";
-	tr.appendChild(th);
-	
-	// Columns
-	for (var o = 0; o < options; o++) {
-		th = document.createElement("th");
-		th.innerHTML = `<input id="LABEL_O_${o}" type="text" value="${DATA.option_labels[o]}" oninput="onDataChanged();">`;
-		tr.appendChild(th);
-	}
-	
-	/*tr = document.createElement("tr");
-	matrix.appendChild(tr);
-	
-	th = document.createElement("th");
-	th.setAttribute("colspan", 2 + options); 
-	th.innerHTML = `<b>${title}</b>`;
-	tr.appendChild(th);*/
-	
-	// Rows
-	for (var f = 0; f < factors; f++) {
-		matrix.appendChild(generateRow(f, options, id));
-	}
-	
-	// Outputs
-	tr = document.createElement("tr");
-	matrix.appendChild(tr);
-	
-	th = document.createElement("th");
-	tr.appendChild(th);
-		
-	th = document.createElement("th");
-	th.innerHTML = "<b>Totals</b>"
-	tr.appendChild(th);
-	
-	for (var o = 0; o < options; o++) {
-		th = document.createElement("th");
-		th.innerHTML = `<output id="OUTPUT_${id}_${o}"><b>0</b></output>`;
-		tr.appendChild(th);
-	}
-	
-}
-
-function generateMatrix() {
-	//saveData(DATA);
-	document.getElementById(ID_MATRIX_TITLE).value = DATA.title;
-	document.getElementById(ID_NUM_FEASIBILITY_FACTORS).value = DATA.num_feasibility_factors;
-	document.getElementById(ID_NUM_IMPACT_FACTORS).value = DATA.num_impact_factors;
-	document.getElementById(ID_NUM_OPTIONS).value = DATA.num_options;
-	
-	generateSubMatrix(ID_FEASIBILITY_MATRIX, DATA.num_feasibility_factors, "Feasibility Factors", "F");
-	generateSubMatrix(ID_IMPACT_MATRIX, DATA.num_impact_factors, "Impact Factors", "I");
-	calculateMatrix();
-}
-
-function generateRow(f, options, id) {
-	var tr = document.createElement("tr");
-	
-	// Title
-	var th;
-	th = document.createElement("th");
-	var label = `Factor ${(f + 1)}`;
+function clampFactors(id, delta) {
+	var element;
 	if (id == "F") {
-		label = DATA.feasibility_labels[f];
+		element = document.getElementById(ID_NUM_FEASIBILITY_FACTORS);
 	} else if (id == "I") {
-		label = DATA.impact_labels[f];
+		element = document.getElementById(ID_NUM_IMPACT_FACTORS);
+	} else if (id == "O") {
+		element = document.getElementById(ID_NUM_OPTIONS);
 	}
-	th.innerHTML = `<input id="LABEL_${id}_${f}" type="text" value="${label}" oninput="onDataChanged();">`;
-	tr.appendChild(th);
-	
-	// Weight slider
-	var value;
-	value = MAX_VALUE / 2 - MIN_VALUE;
-	if (id == "F") {
-		value = parseInt(DATA.feasibility_weights[f]);
-	} else if (id == "I") {
-		value = parseInt(DATA.impact_weights[f]);
-	}
-	tr.appendChild(generateSlider(`WEIGHT_${id}_${f}`, value));
-	
-	// Value sliders
-	for (var o = 0; o < options; o++) {
-		value = MAX_VALUE / 2 - MIN_VALUE;
-		if (id == "F") {
-			value = parseInt(DATA.feasibility_values[o][f]);
-		} else if (id == "I") {
-			value = parseInt(DATA.impact_values[o][f]);
-		}
-		tr.appendChild(generateSlider(`VALUE_${id}_${o}_${f}`, value));
-	}
-	
-	return tr;
-}
-
-function generateSlider(id, value) {
-	th = document.createElement("th");
-	th.innerHTML = `<output>${LABELS[value]}</output> <br> ${LABELS[MIN_VALUE]} <input id="${id}" type="range" max="${MAX_VALUE}" min="${MIN_VALUE}" oninput="this.previousElementSibling.previousElementSibling.value = LABELS[this.value]; onDataChanged(); calculateMatrix();"> ${LABELS[MAX_VALUE]}`;
-	th.childNodes[4].value = value;
-	return th;
+	element.value = parseInt(element.value) + delta;
+	if (parseInt(element.value) < parseInt(element.min)) element.value = element.min;
+	if (parseInt(element.value) > parseInt(element.max)) element.value = element.max;
 }
