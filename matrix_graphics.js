@@ -5,12 +5,15 @@ const LABELS = ["None", "Below Average", "Average", "Above Average", "Most"];
 function generateMatrix() {
     //saveData(DATA);
     document.getElementById(ID_MATRIX_TITLE).value = DATA.title;
+	document.getElementById(ID_MATRIX_TITLE).size = document.getElementById(ID_MATRIX_TITLE).value.length;
+	
     document.getElementById(ID_NUM_FEASIBILITY_FACTORS).value = DATA.num_feasibility_factors;
     document.getElementById(ID_NUM_IMPACT_FACTORS).value = DATA.num_impact_factors;
     document.getElementById(ID_NUM_OPTIONS).value = DATA.num_options;
 
-    generateSubMatrix(ID_FEASIBILITY_MATRIX, DATA.num_feasibility_factors, "Feasibility Factors", "F");
-    generateSubMatrix(ID_IMPACT_MATRIX, DATA.num_impact_factors, "Impact Factors", "I");
+	document.getElementById(ID_MATRIX).innerHTML = "";
+    generateSubMatrix(DATA.num_feasibility_factors, "Feasibility Factors", "F");
+    generateSubMatrix(DATA.num_impact_factors, "Impact Factors", "I");
     calculateMatrix();
 }
 
@@ -18,11 +21,10 @@ function updateLabel(id, label) {
     document.getElementById(id).value = label;
 }
 
-function generateSubMatrix(matrixType, factors, title, id) {
+function generateSubMatrix(factors, title, id) {
     var options = DATA.num_options;
 
-    var matrix = document.getElementById(matrixType);
-    matrix.innerHTML = "";
+    var matrix = document.getElementById(ID_MATRIX);
 
     var tr;
     var th;
@@ -42,7 +44,8 @@ function generateSubMatrix(matrixType, factors, title, id) {
     // Columns
     for (var o = 0; o < options; o++) {
         th = document.createElement("th");
-        th.innerHTML = `<input id="LABEL_O_${o}" type="text" value="${DATA.option_labels[o]}" oninput="onDataChanged();">`;
+        th.innerHTML = `<input id="LABEL_O_${o}" type="text" value="${DATA.option_labels[o]}" oninput="onDataChanged(); this.size=this.value.length;">`;
+		th.childNodes[0].size = th.childNodes[0].value.length;
         tr.appendChild(th);
 
         if (o == options - 1) {
@@ -113,7 +116,8 @@ function generateRow(f, options, id) {
     } else if (id == "I") {
         label = DATA.impact_labels[f];
     }
-    th.innerHTML = `<input id="LABEL_${id}_${f}" type="text" value="${label}" oninput="onDataChanged();">`;
+    th.innerHTML = `<input id="LABEL_${id}_${f}" type="text" value="${label}" oninput="onDataChanged(); this.size=this.value.length;">`;
+	th.childNodes[0].size = th.childNodes[0].value.length;
     tr.appendChild(th);
 
     // Weight slider
