@@ -18,7 +18,13 @@ function generateMatrix() {
 }
 
 function updateLabel(id, label) {
-    document.getElementById(id).value = label;
+	var inputs = document.getElementsByTagName("input");
+	for (var i = 0; i < inputs.length; i++) {
+		if (inputs[i].id == id) {
+			inputs[i].value = label;
+			inputs[i].size = label.length;
+		}
+	}
 }
 
 function generateSubMatrix(factors, title, id) {
@@ -44,7 +50,7 @@ function generateSubMatrix(factors, title, id) {
     // Columns
     for (var o = 0; o < options; o++) {
         th = document.createElement("th");
-        th.innerHTML = `<input id="LABEL_O_${o}" type="text" value="${DATA.option_labels[o]}" oninput="onDataChanged(); this.size=this.value.length;">`;
+        th.innerHTML = `<input id="LABEL_O_${o}" type="text" value="${DATA.option_labels[o]}" oninput="updateLabel(this.id, this.value); onDataChanged(); this.size=this.value.length;">`;
 		th.childNodes[0].size = th.childNodes[0].value.length;
         tr.appendChild(th);
 

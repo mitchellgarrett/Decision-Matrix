@@ -156,6 +156,16 @@ function updateFiles() {
 	}
 }
 
+function loadDataInitial() {
+	for (var i = 0; i < window.localStorage.length; i++) {
+		var key = window.localStorage.key(i);
+		if (key.substr(key.length - 5, 5) == ".json") {
+			loadData(key);
+			return;
+		}
+	}
+}
+
 function loadData(filename) {
 	var data = window.localStorage.getItem(filename);
 	if (data != null) {
@@ -206,7 +216,7 @@ function uploadData() {
 }
 
 function initializeMatrix() {
-	loadData();
+	loadDataInitial();
 }
 
 function calculateMatrix() {
