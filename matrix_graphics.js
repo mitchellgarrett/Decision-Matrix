@@ -50,7 +50,7 @@ function generateSubMatrix(factors, title, id) {
     // Columns
     for (var o = 0; o < options; o++) {
         th = document.createElement("th");
-        th.innerHTML = `<input id="LABEL_O_${o}" type="text" value="${DATA.option_labels[o]}" oninput="updateLabel(this.id, this.value); onDataChanged(); this.size=this.value.length;">`;
+        th.innerHTML = `<input id="LABEL_O_${o}" type="text" value="${DATA.option_labels[o]}" oninput="updateLabel(this.id, this.value); onDataChanged(); this.size=this.value.length; calculateMatrix();">`;
 		th.childNodes[0].size = th.childNodes[0].value.length;
         tr.appendChild(th);
 
@@ -66,14 +66,6 @@ function generateSubMatrix(factors, title, id) {
             th.appendChild(plus);
         }
     }
-
-    /*tr = document.createElement("tr");
-    matrix.appendChild(tr);
-	
-    th = document.createElement("th");
-    th.setAttribute("colspan", 2 + options); 
-    th.innerHTML = `<b>${title}</b>`;
-    tr.appendChild(th);*/
 
     // Rows
     for (var f = 0; f < factors; f++) {
@@ -158,6 +150,130 @@ function generateSlider(id, value) {
 }
 
 function drawGraph(xs, ys) {
+	const graph = document.getElementById(ID_GRAPH);
+	graph.innerHTML = "";
+	
+	const NS = "http://www.w3.org/2000/svg";
+	const BORDER = 10;
+	const SCALE = 0.5;
+	const TOTAL_WIDTH = window.innerWidth * SCALE;
+	const TOTAL_HEIGHT = TOTAL_WIDTH * SCALE;
+	
+    const MIN_X = BORDER;
+    const MAX_X = TOTAL_WIDTH - BORDER;
+    const MIN_Y = BORDER;
+    const MAX_Y = TOTAL_HEIGHT - BORDER;
+    const WIDTH = MAX_X - MIN_X;
+    const HEIGHT = MAX_Y - MIN_Y;
+	
+	// Set height/width
+	graph.setAttribute("width", TOTAL_WIDTH);
+	graph.setAttribute("height", TOTAL_HEIGHT);
+	
+	// Set title/description
+	/*const title = document.createElementNS(NS, "title");
+	title.innerHTML = "feasibility vs. impact chart";
+	graph.appendChild(title);*
+	
+	const desc = document.createElementNS(NS, "desc");
+	desc.innerHTML = "Here is a graph description";
+	graph.appendChild(desc);*/
+	
+	// Draw outline
+	const outline = document.createElementNS(NS, "g");
+	
+	var r = document.createElementNS(NS, "rect");
+	r.setAttribute("width", WIDTH);
+	r.setAttribute("height", HEIGHT);
+	r.setAttribute("style", "fill: white; stroke: black; stroke-width: 1;");
+	r.setAttribute("x", MIN_X);
+	r.setAttribute("y", MIN_Y);
+	outline.appendChild(r);
+	
+	var l = document.createElementNS(NS, "line");
+	l.setAttribute("x1", MIN_X + WIDTH / 2);
+	l.setAttribute("y1", MIN_Y);
+	l.setAttribute("x2", MIN_X + WIDTH / 2);
+	l.setAttribute("y2", MAX_Y);
+	l.setAttribute("style", "stroke: black; stroke-width: 1;")
+	outline.appendChild(l);
+	
+	var l = document.createElementNS(NS, "line");
+	l.setAttribute("x1", MIN_X);
+	l.setAttribute("y1", MIN_Y + HEIGHT / 2);
+	l.setAttribute("x2", MAX_X);
+	l.setAttribute("y2", MIN_Y + HEIGHT / 2);
+	l.setAttribute("style", "stroke: black; stroke-width: 1;")
+	outline.appendChild(l);
+	
+	var t = document.createElementNS(NS, "text");
+	t.innerHTML = "Feasibility";
+	t.setAttribute("fill", "black");
+	t.setAttribute("font-weight", "bold");
+	t.setAttribute("text-anchor", "middle");
+	t.setAttribute("x", MIN_X + WIDTH / 2);
+	t.setAttribute("y", MAX_Y + BORDER);
+	outline.appendChild(t);
+	
+	var t = document.createElementNS(NS, "text");
+	t.innerHTML = "Impact";
+	t.setAttribute("fill", "black");
+	t.setAttribute("font-weight", "bold");
+	t.setAttribute("text-anchor", "middle");
+	t.setAttribute("x", MIN_X);
+	t.setAttribute("y", MIN_Y + HEIGHT / 2);
+	t.setAttribute("transform", `rotate(-90, ${MIN_X}, ${MIN_Y + HEIGHT / 2})`);
+	outline.appendChild(t);
+	
+	graph.appendChild(outline);
+	
+	// Draw points
+	for (var i = 0; i < xs.length; i++) {
+		const point = document.createElementNS(NS, "g");
+		
+		var color = COLORS[0];
+		if (xs[i] >= 0.75 && ys[i] >= 0.75) {
+            color= COLORS[2];
+        } else if (xs[i] >= 0.5 && ys[i] >= 0.5) {
+            color = COLORS[1];
+		}
+		
+		const c = document.createElementNS(NS, "circle");
+		const r = 15;
+		const x = MIN_X + r + xs[i] * (WIDTH - r * 2);
+		const y = MAX_Y - r - ys[i] * (HEIGHT - r * 2);
+		
+		c.setAttribute("cx", x);
+		c.setAttribute("cy", y);
+		c.setAttribute("r", r);
+		c.setAttribute("stroke", "black");
+		c.setAttribute("fill", color);
+		point.appendChild(c);
+		
+		var t = document.createElementNS(NS, "text");
+		t.setAttribute("fill", "black");
+		t.setAttribute("font-weight", "bold");
+		t.setAttribute("text-anchor", "middle");
+		t.setAttribute("dominant-baseline", "middle");
+		t.setAttribute("x", x);
+		t.setAttribute("y", y);
+		t.innerHTML = (i + 1);
+		point.appendChild(t);
+		
+		var t = document.createElementNS(NS, "text");
+		t.setAttribute("fill", "black");
+		t.setAttribute("text-anchor", "middle");
+		t.setAttribute("dominant-baseline", "hanging");
+		t.setAttribute("x", x);
+		t.setAttribute("y", y + r);
+		t.innerHTML = DATA.option_labels[i];
+		point.appendChild(t);
+		
+		graph.appendChild(point);
+	}
+}
+
+function drawGraph_Old(xs, ys) {
     const canvas = document.getElementById(ID_GRAPH);
     const ctx = canvas.getContext("2d");
 
