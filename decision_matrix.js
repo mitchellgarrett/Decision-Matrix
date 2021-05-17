@@ -164,6 +164,7 @@ function loadDataInitial() {
 			return;
 		}
 	}
+	loadData();
 }
 
 function loadData(filename) {
